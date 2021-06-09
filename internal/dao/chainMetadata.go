@@ -2,16 +2,19 @@ package dao
 
 import (
 	"context"
+	"reflect"
+
 	"github.com/go-kratos/kratos/pkg/cache/redis"
+	"github.com/go-kratos/kratos/pkg/log"
 	"github.com/itering/subscan/util"
 	"github.com/pkg/errors"
-	"reflect"
 )
 
 func (d *Dao) SetMetadata(c context.Context, metadata map[string]interface{}) (err error) {
 	conn := d.redis.Get(c)
 	defer conn.Close()
 	args := redis.Args{}.Add(RedisMetadataKey)
+	log.Info("Redis Ready")
 	if len(metadata) == 0 {
 		return errors.New("ERR: nil metadata")
 	}

@@ -2,6 +2,8 @@ package configs
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/go-kratos/kratos/pkg/cache/redis"
 	"github.com/go-kratos/kratos/pkg/conf/paladin"
 	"github.com/go-kratos/kratos/pkg/database/sql"
@@ -49,6 +51,7 @@ func (dc *MysqlConf) mergeEnvironment() {
 	dbName := util.GetEnv("MYSQL_DB", dc.Conf.DB)
 	dc.Api.DSN = fmt.Sprintf("%s:%s@tcp(%s)/%s", dbUser, dbPass, dbHost, dbName) + dc.Api.DSN
 	dc.Task.DSN = fmt.Sprintf("%s:%s@tcp(%s)/%s", dbUser, dbPass, dbHost, dbName) + dc.Task.DSN
+	log.Println(dbHost, dbName, dbPass, dbUser)
 }
 
 func (rc *RedisConf) mergeEnvironment() {

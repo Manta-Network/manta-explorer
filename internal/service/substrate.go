@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/go-kratos/kratos/pkg/log"
 	"github.com/itering/subscan/util"
 	"github.com/itering/substrate-api-rpc/rpc"
 	"github.com/itering/substrate-api-rpc/websocket"
 	"github.com/panjf2000/ants/v2"
-	"sync"
-	"time"
 )
 
 // FinalizedWaitingBlockCount
@@ -70,6 +71,7 @@ func (s *SubscribeService) parser(message []byte) (err error) {
 		r := j.ToRuntimeVersion()
 		_ = s.regRuntimeVersion(r.ImplName, r.SpecVersion)
 		_ = s.updateChainMetadata(map[string]interface{}{"implName": r.ImplName, "specVersion": r.SpecVersion})
+		log.Info("Is successful?")
 		util.CurrentRuntimeSpecVersion = r.SpecVersion
 		return
 	}
@@ -87,7 +89,11 @@ func (s *SubscribeService) parser(message []byte) (err error) {
 		}()
 	case ChainFinalizedHead:
 		r := j.ToNewHead()
-		_ = s.updateChainMetadata(map[string]interface{}{"finalized_blockNum": util.HexToNumStr(r.Number)})
+		err = s.updateChainMetadata(map[string]interface{}{"finalized_blockNum": util.HexToNumStr(r.Number)})
+		if err != nil {
+			log.Error("What:?", err)
+		}
+		log.Info("ChainFinalizedHead")
 		upgradeHealth(j.Method)
 		go func() {
 			s.newFinHead <- true
@@ -118,6 +124,7 @@ func (s *SubscribeService) subscribeFetchBlock() {
 				log.Error("ChainGetBlockHash get error %v", err)
 			} else {
 				s.SetHeartBeat(fmt.Sprintf("%s:heartBeat:%s", util.NetworkNode, "substrate"))
+				log.Info("Call FillBlockData")
 			}
 		}(blockNum)
 		wg.Done()
@@ -253,6 +260,7 @@ func (s *Service) FillBlockData(conn websocket.WsConn, blockNum int, finalized b
 			block.Event = event
 
 			_ = s.UpdateBlockData(conn, block, finalized)
+			log.Info("UpdateBlockData")
 		}
 		setFinalized()
 		return

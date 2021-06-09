@@ -2,6 +2,8 @@ package dao
 
 import (
 	"context"
+	"log"
+
 	"github.com/go-kratos/kratos/pkg/cache/redis"
 	"github.com/itering/subscan/configs"
 	"github.com/jinzhu/gorm"
@@ -24,12 +26,16 @@ func New() (dao *Dao, storage *DbStorage) {
 	dc.MergeConf()
 	rc.MergeConf()
 	db := newDb(dc)
+
+	log.Println("New DB")
 	dao = &Dao{
 		db:    db,
 		redis: redis.NewPool(rc.Config, redis.DialDatabase(rc.DbName)),
 	}
+	log.Println("dao Try")
 	dao.Migration()
 	storage = &DbStorage{db: db}
+	log.Println("Storage init success")
 	return
 }
 

@@ -5,15 +5,16 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"os"
+	"reflect"
+	"strings"
+	"time"
+
 	"github.com/go-sql-driver/mysql"
 	"github.com/itering/subscan-plugin/storage"
 	"github.com/itering/subscan/configs"
 	"github.com/itering/subscan/model"
 	"github.com/itering/substrate-api-rpc/websocket"
-	"os"
-	"reflect"
-	"strings"
-	"time"
 
 	"github.com/go-kratos/kratos/pkg/log"
 	"github.com/itering/subscan/util"
@@ -70,7 +71,7 @@ func (d *DbStorage) getPluginPrefixTableName(instant interface{}) string {
 func (d *DbStorage) FindBy(record interface{}, query interface{}, option *storage.Option) (int, bool) {
 	var count int
 	tx := d.db
-
+	log.Info("Findby")
 	// where
 	if reflect.ValueOf(query).IsValid() {
 		tx = tx.Where(query)
@@ -138,6 +139,7 @@ func (d *DbStorage) Create(record interface{}) error {
 func (d *DbStorage) Update(model interface{}, query interface{}, attr map[string]interface{}) error {
 	if err := d.checkProtected(model); err == nil {
 		tx := d.db.Table(d.getPluginPrefixTableName(model)).Where(query).Updates(attr)
+		log.Info("Update")
 		return tx.Error
 	} else {
 		return err

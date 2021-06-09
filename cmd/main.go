@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"runtime"
+	"syscall"
+	"time"
+
 	"github.com/go-kratos/kratos/pkg/conf/paladin"
 	"github.com/go-kratos/kratos/pkg/log"
 	"github.com/itering/subscan/internal/observer"
@@ -11,11 +17,6 @@ import (
 	"github.com/itering/subscan/internal/service"
 	"github.com/itering/substrate-api-rpc/websocket"
 	"github.com/urfave/cli"
-	"os"
-	"os/signal"
-	"runtime"
-	"syscall"
-	"time"
 )
 
 func main() {
@@ -80,7 +81,9 @@ func setupApp() *cli.App {
 
 func run() {
 	svc := service.New()
+	log.Info("Service Success")
 	engine := http.New(svc)
+	log.Info("Engine Success")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {

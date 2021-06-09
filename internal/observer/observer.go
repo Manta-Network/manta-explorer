@@ -2,15 +2,15 @@ package observer
 
 import (
 	"fmt"
-	"github.com/itering/subscan/internal/dao"
-	"github.com/itering/substrate-api-rpc/pkg/recws"
 	"log"
 	"os"
 	"syscall"
 	"time"
 
+	"github.com/itering/subscan/internal/dao"
 	"github.com/itering/subscan/internal/service"
 	"github.com/itering/subscan/util"
+	"github.com/itering/substrate-api-rpc/pkg/recws"
 	"github.com/sevlyar/go-daemon"
 )
 
@@ -86,20 +86,28 @@ var (
 
 func doRun(dt string) {
 	srv = service.New()
+	log.Println("Service Success!")
 	defer srv.Close()
 LOOP:
 	for {
+		log.Println("Start LOOP")
 		if dt == "substrate" {
+			log.Println("Before Interrupt")
 			interrupt := make(chan os.Signal, 1)
+			log.Println("Interrupt")
 			subscribeConn := &recws.RecConn{KeepAliveTimeout: 10 * time.Second}
+			log.Println("Reconn")
 			subscribeConn.Dial(util.WSEndPoint, nil)
 			srv.Subscribe(subscribeConn, interrupt)
+			log.Println("Connect WSEndPoint Success")
 		} else {
 			go heartBeat(dt)
+			log.Println("Connect WSEndPoint heart Success")
 			switch dt {
 			default:
 				break LOOP
 			}
+
 		}
 		if _, ok := <-stop; ok {
 			break LOOP
