@@ -25,9 +25,7 @@ func New() (s *Service) {
 	d, dbStorage := dao.New()
 	s = &Service{dao: d}
 	s.initSubRuntimeLatest()
-	log.Info("Success?")
 	pluginRegister(dbStorage)
-	log.Info("SuccessDB?")
 	return s
 }
 
@@ -47,23 +45,22 @@ func (s *Service) initSubRuntimeLatest() {
 			}
 		} else {
 			if os.Getenv("TEST_MOD") != "true" {
+				log.Error("readTypeRegistry ERROR", err)
 				panic(err)
 			}
 		}
 	}()
-	log.Info("Start init.")
 	// find db
 	if recent := s.dao.RuntimeVersionRecent(); recent != nil && strings.HasPrefix(recent.RawData, "0x") {
 		metadata.Latest(&metadata.RuntimeRaw{Spec: recent.SpecVersion, Raw: recent.RawData})
-		log.Info("Find in DB")
 		return
 	}
 	// find metadata for blockChain
 	if raw := s.regCodecMetadata(); strings.HasPrefix(raw, "0x") {
 		metadata.Latest(&metadata.RuntimeRaw{Spec: 1, Raw: raw})
-		log.Info("Find in blockchain")
 		return
 	}
+	log.Error("Can not find chain metadata, please check network")
 	panic("Can not find chain metadata, please check network")
 }
 

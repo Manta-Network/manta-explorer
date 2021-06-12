@@ -3,13 +3,16 @@ package dao
 import (
 	"context"
 	"encoding/json"
+	"strings"
+
+	"github.com/go-kratos/kratos/pkg/log"
 	"github.com/itering/subscan/model"
 	"github.com/itering/subscan/util"
 	"github.com/itering/subscan/util/address"
-	"strings"
 )
 
 func (d *Dao) CreateExtrinsic(c context.Context, txn *GormDB, extrinsic *model.ChainExtrinsic) error {
+	var err error
 	ce := model.ChainExtrinsic{
 		BlockTimestamp:     extrinsic.BlockTimestamp,
 		ExtrinsicIndex:     extrinsic.ExtrinsicIndex,
@@ -31,9 +34,15 @@ func (d *Dao) CreateExtrinsic(c context.Context, txn *GormDB, extrinsic *model.C
 	}
 	query := txn.Create(&ce)
 	if query.RowsAffected > 0 {
-		_ = d.IncrMetadata(c, "count_extrinsic", 1)
+		err = d.IncrMetadata(c, "count_extrinsic", 1)
+		if err != nil {
+			log.Error("IncrMetadata ERROR", err)
+		}
 		if ce.IsSigned {
-			_ = d.IncrMetadata(c, "count_signed_extrinsic", 1)
+			err = d.IncrMetadata(c, "count_signed_extrinsic", 1)
+			if err != nil {
+				log.Error("IncrMetadata ERROR", err)
+			}
 		}
 	}
 	return d.checkDBError(query.Error)
@@ -43,7 +52,10 @@ func (d *Dao) DropExtrinsicNotFinalizedData(c context.Context, blockNum int, fin
 	delExist := false
 	if finalized {
 		if query := d.db.Where("block_num = ?", blockNum).Delete(model.ChainExtrinsic{BlockNum: blockNum}); query.RowsAffected > 0 {
-			_ = d.IncrMetadata(c, "count_extrinsic", -int(query.RowsAffected))
+			err := d.IncrMetadata(c, "count_extrinsic", -int(query.RowsAffected))
+			if err != nil {
+				log.Error("IncrMetadata ERROR", err)
+			}
 			delExist = true
 		}
 
@@ -69,7 +81,10 @@ func (d *Dao) GetExtrinsicList(c context.Context, page, row int, order string, q
 	var extrinsics []model.ChainExtrinsic
 	var count int
 
-	blockNum, _ := d.GetFillBestBlockNum(context.TODO())
+	blockNum, err := d.GetFillBestBlockNum(context.TODO())
+	if err != nil {
+		log.Error("GetFillBestBlockNum ERROR", err)
+	}
 	for index := blockNum / model.SplitTableBlockNum; index >= 0; index-- {
 		var tableData []model.ChainExtrinsic
 		var tableCount int
@@ -97,7 +112,10 @@ func (d *Dao) GetExtrinsicList(c context.Context, page, row int, order string, q
 	}
 
 	if len(queryWhere) == 0 {
-		m, _ := d.GetMetadata(c)
+		m, err1 := d.GetMetadata(c)
+		if err1 != nil {
+			log.Error("GetMetadata ERROR", err1)
+		}
 		count = util.StringToInt(m["count_extrinsic"])
 	}
 	return extrinsics, count
@@ -105,7 +123,10 @@ func (d *Dao) GetExtrinsicList(c context.Context, page, row int, order string, q
 
 func (d *Dao) GetExtrinsicsByHash(c context.Context, hash string) *model.ChainExtrinsic {
 	var extrinsic model.ChainExtrinsic
-	blockNum, _ := d.GetFillBestBlockNum(c)
+	blockNum, err := d.GetFillBestBlockNum(c)
+	if err != nil {
+		log.Error("GetFillBestBlockNum ERROR", err)
+	}
 	for index := blockNum / (model.SplitTableBlockNum); index >= 0; index-- {
 		query := d.db.Model(model.ChainExtrinsic{BlockNum: index * model.SplitTableBlockNum}).Where("extrinsic_hash = ?", hash).Order("id asc").Limit(1).Scan(&extrinsic)
 		if query != nil && !query.RecordNotFound() {

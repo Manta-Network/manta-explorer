@@ -36,12 +36,14 @@ func (s *Service) Subscribe(conn ws.WsConn, interrupt chan os.Signal) {
 				continue
 			}
 			_, message, err := conn.ReadMessage()
-			log.Info("%s,...,%s", message, err)
 			if err != nil {
 				log.Error("read: %s", err)
 				continue
 			}
-			_ = subscribeSrv.parser(message)
+			err = subscribeSrv.parser(message)
+			if err != nil {
+				log.Error("parser ERROR", err)
+			}
 		}
 	}()
 

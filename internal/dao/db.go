@@ -56,7 +56,10 @@ func (d *DbStorage) checkProtected(model interface{}) error {
 }
 
 func (d *DbStorage) RPCPool() *websocket.PoolConn {
-	conn, _ := websocket.Init()
+	conn, err := websocket.Init()
+	if err != nil {
+		log.Error("Websocket Init ERROR", err)
+	}
 	return conn
 }
 
@@ -71,7 +74,6 @@ func (d *DbStorage) getPluginPrefixTableName(instant interface{}) string {
 func (d *DbStorage) FindBy(record interface{}, query interface{}, option *storage.Option) (int, bool) {
 	var count int
 	tx := d.db
-	log.Info("Findby")
 	// where
 	if reflect.ValueOf(query).IsValid() {
 		tx = tx.Where(query)
@@ -139,7 +141,6 @@ func (d *DbStorage) Create(record interface{}) error {
 func (d *DbStorage) Update(model interface{}, query interface{}, attr map[string]interface{}) error {
 	if err := d.checkProtected(model); err == nil {
 		tx := d.db.Table(d.getPluginPrefixTableName(model)).Where(query).Updates(attr)
-		log.Info("Update")
 		return tx.Error
 	} else {
 		return err
@@ -175,6 +176,7 @@ func (d *Dao) DbCommit(c *GormDB) {
 	tx := c.Commit()
 	c.gdbDone = true
 	if err := tx.Error; err != nil && err != sql.ErrTxDone {
+		log.Error("Fatal error DbCommit ERROR", err)
 		fmt.Println("Fatal error DbCommit", err)
 	}
 }
@@ -186,7 +188,7 @@ func (d *Dao) DbRollback(c *GormDB) {
 	tx := c.Rollback()
 	c.gdbDone = true
 	if err := tx.Error; err != nil && err != sql.ErrTxDone {
-		fmt.Println("Fatal error DbRollback", err)
+		log.Error("Fatal error DbRollback ERROR", err)
 	}
 }
 
@@ -200,7 +202,7 @@ func (d *Dao) DbBegin() *GormDB {
 }
 
 // private funcs
-func newDb(dc configs.MysqlConf) (db *gorm.DB) {
+func newDb(dc configs.MysqlConf) (db *gorm.DB, erre error) {
 	var err error
 	if os.Getenv("TASK_MOD") == "true" {
 		db, err = gorm.Open("mysql", dc.Task.DSN)
@@ -211,6 +213,8 @@ func newDb(dc configs.MysqlConf) (db *gorm.DB) {
 	}
 	if err != nil {
 		panic(err)
+	} else {
+		log.Info("DB init successfully")
 	}
 	db.DB().SetConnMaxLifetime(5 * time.Minute)
 	db.DB().SetMaxOpenConns(100)
@@ -221,7 +225,7 @@ func newDb(dc configs.MysqlConf) (db *gorm.DB) {
 	if os.Getenv("TEST_MOD") != "true" {
 		db.LogMode(false)
 	}
-	return db
+	return db, err
 }
 
 func (d *Dao) checkDBError(err error) error {

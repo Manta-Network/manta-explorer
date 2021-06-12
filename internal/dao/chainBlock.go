@@ -3,10 +3,12 @@ package dao
 import (
 	"context"
 	"fmt"
+	"sort"
+
 	"github.com/go-kratos/kratos/pkg/cache/redis"
+	"github.com/go-kratos/kratos/pkg/log"
 	"github.com/itering/subscan/model"
 	"github.com/itering/subscan/util/address"
-	"sort"
 )
 
 // CreateBlock, mysql db transaction
@@ -26,8 +28,16 @@ func (d *Dao) CreateBlock(txn *GormDB, cb *model.ChainBlock) (err error) {
 func (d *Dao) SaveFillAlreadyBlockNum(c context.Context, blockNum int) (err error) {
 	conn := d.redis.Get(c)
 	defer conn.Close()
-	if num, _ := redis.Int(conn.Do("GET", RedisFillAlreadyBlockNum)); blockNum > num {
+	if num, err1 := redis.Int(conn.Do("GET", RedisFillAlreadyBlockNum)); blockNum > num && err1 == nil {
 		_, err = conn.Do("SET", RedisFillAlreadyBlockNum, blockNum)
+		if err != nil {
+			log.Error("Do SET", err1)
+		}
+
+	} else {
+		if err1 != nil {
+			log.Error("redis.Int ERROR", err1)
+		}
 	}
 	return
 }
@@ -38,8 +48,15 @@ func (d *Dao) SaveFillAlreadyFinalizedBlockNum(c context.Context, blockNum int) 
 		conn.Close()
 	}()
 
-	if num, _ := redis.Int(conn.Do("GET", RedisFillFinalizedBlockNum)); blockNum > num {
+	if num, err1 := redis.Int(conn.Do("GET", RedisFillFinalizedBlockNum)); blockNum > num && err1 == nil {
 		_, err = conn.Do("SET", RedisFillFinalizedBlockNum, blockNum)
+		if err != nil {
+			log.Error("Do SET ERROR", err1)
+		}
+	} else {
+		if err1 != nil {
+			log.Error("redis.GET ERROR", err1)
+		}
 	}
 	return
 }
@@ -60,7 +77,10 @@ func (d *Dao) GetFillFinalizedBlockNum(c context.Context) (num int, err error) {
 
 func (d *Dao) GetBlockList(page, row int) []model.ChainBlock {
 	var blocks []model.ChainBlock
-	blockNum, _ := d.GetFillBestBlockNum(context.TODO())
+	blockNum, err := d.GetFillBestBlockNum(context.TODO())
+	if err != nil {
+		log.Error("GetFillBestBlockNum ERROR", err)
+	}
 	head := blockNum - page*row
 	if head < 0 {
 		return nil
@@ -95,7 +115,12 @@ func (d *Dao) GetBlockList(page, row int) []model.ChainBlock {
 
 func (d *Dao) GetBlockByHash(c context.Context, hash string) *model.ChainBlock {
 	var block model.ChainBlock
-	blockNum, _ := d.GetBestBlockNum(context.TODO())
+	var err error
+	blockNum, err := d.GetBestBlockNum(context.TODO())
+	if err != nil {
+		log.Error("GetBestBlockNum ERROR", err)
+		panic(err)
+	}
 	for index := int(blockNum / uint64(model.SplitTableBlockNum)); index >= 0; index-- {
 		query := d.db.Model(&model.ChainBlock{BlockNum: index * model.SplitTableBlockNum}).Where("hash = ?", hash).Scan(&block)
 		if query != nil && !query.RecordNotFound() {
@@ -110,6 +135,10 @@ func (d *Dao) GetBlockByNum(blockNum int) *model.ChainBlock {
 	query := d.db.Model(&model.ChainBlock{BlockNum: blockNum}).Where("block_num = ?", blockNum).Scan(&block)
 	if query == nil || query.Error != nil || query.RecordNotFound() {
 		return nil
+	} else {
+		if query.Error != nil {
+			log.Error("query ERROR", query.Error)
+		}
 	}
 	return &block
 }
@@ -157,6 +186,10 @@ func (d *Dao) GetNearBlock(blockNum int) *model.ChainBlock {
 	query := d.db.Model(&model.ChainBlock{BlockNum: blockNum}).Where("block_num > ?", blockNum).Order("block_num desc").Scan(&block)
 	if query == nil || query.Error != nil || query.RecordNotFound() {
 		return nil
+	} else {
+		if query.Error != nil {
+			log.Error("query ERROR", query.Error)
+		}
 	}
 	return &block
 }
@@ -177,6 +210,10 @@ func (d *Dao) BlocksReverseByNum(blockNums []int) map[int]model.ChainBlock {
 		query := d.db.Model(model.ChainBlock{BlockNum: index * model.SplitTableBlockNum}).Where("block_num in (?)", blockNums).Scan(&tableData)
 		if query == nil || query.Error != nil || query.RecordNotFound() {
 			continue
+		} else {
+			if query.Error != nil {
+				log.Error("query ERROR", query.Error)
+			}
 		}
 		blocks = append(blocks, tableData...)
 	}

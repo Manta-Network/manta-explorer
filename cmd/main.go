@@ -81,9 +81,7 @@ func setupApp() *cli.App {
 
 func run() {
 	svc := service.New()
-	log.Info("Service Success")
 	engine := http.New(svc)
-	log.Info("Engine Success")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {

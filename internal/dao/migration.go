@@ -2,20 +2,27 @@ package dao
 
 import (
 	"context"
+
+	"github.com/go-kratos/kratos/pkg/log"
 	"github.com/itering/subscan/model"
 )
 
-func (d *Dao) Migration() {
+func (d *Dao) Migration() (err error) {
+	var err1 error
 	db := d.db
 	var blockNum int
 	if d.redis != nil {
-		blockNum, _ = d.GetFillBestBlockNum(context.TODO())
+		blockNum, err1 = d.GetFillBestBlockNum(context.TODO())
+		if err1 != nil {
+			log.Error("GetFillBestBlockNum ERROR", err1)
+		}
 	}
 	_ = db.Set("gorm:table_options", "ENGINE=InnoDB").AutoMigrate(d.InternalTables(blockNum)...)
 
 	for i := 0; i <= blockNum/model.SplitTableBlockNum; i++ {
 		d.AddIndex(i * model.SplitTableBlockNum)
 	}
+	return err
 }
 
 func (d *Dao) InternalTables(blockNum int) (models []interface{}) {

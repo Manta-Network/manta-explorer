@@ -14,7 +14,6 @@ func (d *Dao) SetMetadata(c context.Context, metadata map[string]interface{}) (e
 	conn := d.redis.Get(c)
 	defer conn.Close()
 	args := redis.Args{}.Add(RedisMetadataKey)
-	log.Info("Redis Ready")
 	if len(metadata) == 0 {
 		return errors.New("ERR: nil metadata")
 	}
@@ -26,6 +25,9 @@ func (d *Dao) SetMetadata(c context.Context, metadata map[string]interface{}) (e
 		}
 	}
 	_, err = conn.Do("HMSET", args...)
+	if err != nil {
+		log.Error("HMSET ERROR", err)
+	}
 	return
 }
 
@@ -36,6 +38,9 @@ func (d *Dao) IncrMetadata(c context.Context, filed string, incrNum int) (err er
 	conn := d.redis.Get(c)
 	defer conn.Close()
 	_, err = conn.Do("HINCRBY", RedisMetadataKey, filed, incrNum)
+	if err != nil {
+		log.Error("HINCRBY ERROR", err)
+	}
 	return
 }
 

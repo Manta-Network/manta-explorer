@@ -2,10 +2,12 @@ package dao
 
 import (
 	"context"
+	"testing"
+
 	"github.com/garyburd/redigo/redis"
+	"github.com/go-kratos/kratos/pkg/log"
 	"github.com/itering/subscan/util"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestDao_SetMetadata(t *testing.T) {
@@ -18,7 +20,10 @@ func TestDao_SetMetadata(t *testing.T) {
 	conn := testDao.redis.Get(ctx)
 	defer conn.Close()
 	for key, expect := range testCase {
-		value, _ := redis.String(conn.Do("HGET", RedisMetadataKey, key))
+		value, err := redis.String(conn.Do("HGET", RedisMetadataKey, key))
+		if err != nil {
+			log.Error("redis ERROR", err)
+		}
 		assert.Equal(t, expect, value)
 	}
 }

@@ -3,9 +3,11 @@ package dao
 import (
 	"context"
 	"fmt"
+	"strings"
+
+	"github.com/go-kratos/kratos/pkg/log"
 	"github.com/itering/subscan/model"
 	"github.com/itering/subscan/util"
-	"strings"
 )
 
 func (d *Dao) CreateEvent(txn *GormDB, event *model.ChainEvent) error {
@@ -25,7 +27,10 @@ func (d *Dao) CreateEvent(txn *GormDB, event *model.ChainEvent) error {
 	query := txn.Create(&e)
 	if query.RowsAffected > 0 {
 		incrCount++
-		_ = d.IncrMetadata(context.TODO(), "count_event", incrCount)
+		err := d.IncrMetadata(context.TODO(), "count_event", incrCount)
+		if err != nil {
+			log.Error("IncrMetadata ERROR", err)
+		}
 	}
 	return d.checkDBError(query.Error)
 }
@@ -57,7 +62,10 @@ func (d *Dao) GetEventList(page, row int, order string, where ...string) ([]mode
 
 	var count int
 
-	blockNum, _ := d.GetFillBestBlockNum(context.TODO())
+	blockNum, err := d.GetFillBestBlockNum(context.TODO())
+	if err != nil {
+		log.Error("GetFillBestBlockNum ERROR", err)
+	}
 	for index := blockNum / model.SplitTableBlockNum; index >= 0; index-- {
 		var tableData []model.ChainEvent
 		var tableCount int

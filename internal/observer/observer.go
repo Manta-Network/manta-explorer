@@ -86,23 +86,16 @@ var (
 
 func doRun(dt string) {
 	srv = service.New()
-	log.Println("Service Success!")
 	defer srv.Close()
 LOOP:
 	for {
-		log.Println("Start LOOP")
 		if dt == "substrate" {
-			log.Println("Before Interrupt")
 			interrupt := make(chan os.Signal, 1)
-			log.Println("Interrupt")
 			subscribeConn := &recws.RecConn{KeepAliveTimeout: 10 * time.Second}
-			log.Println("Reconn")
 			subscribeConn.Dial(util.WSEndPoint, nil)
 			srv.Subscribe(subscribeConn, interrupt)
-			log.Println("Connect WSEndPoint Success")
 		} else {
 			go heartBeat(dt)
-			log.Println("Connect WSEndPoint heart Success")
 			switch dt {
 			default:
 				break LOOP
