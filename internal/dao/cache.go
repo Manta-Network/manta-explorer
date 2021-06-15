@@ -3,8 +3,10 @@ package dao
 import (
 	"context"
 	"encoding/json"
-	"github.com/go-kratos/kratos/pkg/cache/redis"
 	"strconv"
+
+	"github.com/go-kratos/kratos/pkg/cache/redis"
+	"github.com/go-kratos/kratos/pkg/log"
 )
 
 func (d *Dao) setCache(c context.Context, key string, value interface{}, ttl int) (err error) {
@@ -26,9 +28,15 @@ func (d *Dao) setCache(c context.Context, key string, value interface{}, ttl int
 	}
 	if ttl <= 0 {
 		_, err = conn.Do("set", key, val)
+		if err != nil {
+			log.Error("Set ERROR", err)
+		}
 		return
 	}
 	_, err = conn.Do("setex", key, ttl, val)
+	if err != nil {
+		log.Error("setex ERROR", err)
+	}
 	return
 }
 

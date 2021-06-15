@@ -2,15 +2,16 @@ package service
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
+
 	"github.com/go-kratos/kratos/pkg/log"
 	"github.com/itering/subscan/internal/dao"
 	"github.com/itering/subscan/util"
 	"github.com/itering/substrate-api-rpc"
 	"github.com/itering/substrate-api-rpc/metadata"
 	"github.com/itering/substrate-api-rpc/websocket"
-	"io/ioutil"
-	"os"
-	"strings"
 )
 
 // Service
@@ -44,11 +45,11 @@ func (s *Service) initSubRuntimeLatest() {
 			}
 		} else {
 			if os.Getenv("TEST_MOD") != "true" {
+				log.Error("readTypeRegistry ERROR", err)
 				panic(err)
 			}
 		}
 	}()
-
 	// find db
 	if recent := s.dao.RuntimeVersionRecent(); recent != nil && strings.HasPrefix(recent.RawData, "0x") {
 		metadata.Latest(&metadata.RuntimeRaw{Spec: recent.SpecVersion, Raw: recent.RawData})
@@ -59,6 +60,7 @@ func (s *Service) initSubRuntimeLatest() {
 		metadata.Latest(&metadata.RuntimeRaw{Spec: 1, Raw: raw})
 		return
 	}
+	log.Error("Can not find chain metadata, please check network")
 	panic("Can not find chain metadata, please check network")
 }
 

@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/go-kratos/kratos/pkg/log"
 	"github.com/itering/subscan/util"
 	"github.com/itering/substrate-api-rpc/rpc"
 	"github.com/itering/substrate-api-rpc/websocket"
 	"github.com/panjf2000/ants/v2"
-	"sync"
-	"time"
 )
 
 // FinalizedWaitingBlockCount
@@ -68,8 +69,14 @@ func (s *SubscribeService) parser(message []byte) (err error) {
 	switch j.Id {
 	case runtimeVersion:
 		r := j.ToRuntimeVersion()
-		_ = s.regRuntimeVersion(r.ImplName, r.SpecVersion)
-		_ = s.updateChainMetadata(map[string]interface{}{"implName": r.ImplName, "specVersion": r.SpecVersion})
+		err = s.regRuntimeVersion(r.ImplName, r.SpecVersion)
+		if err != nil {
+			log.Error("regRuntimeVersion ERROR ", err)
+		}
+		err = s.updateChainMetadata(map[string]interface{}{"implName": r.ImplName, "specVersion": r.SpecVersion})
+		if err != nil {
+			log.Error("updateChainMetadata ERROR ", err)
+		}
 		util.CurrentRuntimeSpecVersion = r.SpecVersion
 		return
 	}
@@ -77,7 +84,7 @@ func (s *SubscribeService) parser(message []byte) (err error) {
 	switch j.Method {
 	case ChainNewHead:
 		r := j.ToNewHead()
-		_ = s.updateChainMetadata(map[string]interface{}{"blockNum": util.HexToNumStr(r.Number)})
+		err = s.updateChainMetadata(map[string]interface{}{"blockNum": util.HexToNumStr(r.Number)})
 		upgradeHealth(j.Method)
 		go func() {
 			s.newHead <- true
@@ -87,7 +94,10 @@ func (s *SubscribeService) parser(message []byte) (err error) {
 		}()
 	case ChainFinalizedHead:
 		r := j.ToNewHead()
-		_ = s.updateChainMetadata(map[string]interface{}{"finalized_blockNum": util.HexToNumStr(r.Number)})
+		err = s.updateChainMetadata(map[string]interface{}{"finalized_blockNum": util.HexToNumStr(r.Number)})
+		if err != nil {
+			log.Error("UpdateChainMetadata: ", err)
+		}
 		upgradeHealth(j.Method)
 		go func() {
 			s.newFinHead <- true
@@ -105,13 +115,17 @@ func (s *SubscribeService) parser(message []byte) (err error) {
 
 func (s *SubscribeService) subscribeFetchBlock() {
 	var wg sync.WaitGroup
+	var err error
 	ctx := context.TODO()
 	type BlockFinalized struct {
 		BlockNum  int  `json:"block_num"`
 		Finalized bool `json:"finalized"`
 	}
 
-	p, _ := ants.NewPoolWithFunc(10, func(i interface{}) {
+	p, err := ants.NewPoolWithFunc(10, func(i interface{}) {
+		if err != nil {
+			log.Error("NewPoolWithFunc ERROR", err)
+		}
 		blockNum := i.(BlockFinalized)
 		func(bf BlockFinalized) {
 			if err := s.FillBlockData(nil, bf.BlockNum, bf.Finalized); err != nil {
@@ -195,7 +209,6 @@ func (s *Service) FillBlockData(conn websocket.WsConn, blockNum int, finalized b
 	if err != nil || blockHash == "" {
 		return fmt.Errorf("ChainGetBlockHash get error %v", err)
 	}
-	log.Info("Block num %d hash %s", blockNum, blockHash)
 
 	// block
 	if err = websocket.SendWsRequest(conn, v, rpc.ChainGetBlock(wsBlock, blockHash)); err != nil {
@@ -220,7 +233,10 @@ func (s *Service) FillBlockData(conn websocket.WsConn, blockNum int, finalized b
 		specVersion = s.GetCurrentRuntimeSpecVersion(blockNum)
 	} else {
 		specVersion = r.SpecVersion
-		_ = s.regRuntimeVersion(r.ImplName, specVersion, blockHash)
+		err = s.regRuntimeVersion(r.ImplName, specVersion, blockHash)
+		if err != nil {
+			log.Error("regRuntimeVersion ERROR", err)
+		}
 	}
 
 	if specVersion > util.CurrentRuntimeSpecVersion {
@@ -233,7 +249,10 @@ func (s *Service) FillBlockData(conn websocket.WsConn, blockNum int, finalized b
 
 	var setFinalized = func() {
 		if finalized {
-			_ = s.dao.SaveFillAlreadyFinalizedBlockNum(context.TODO(), blockNum)
+			err = s.dao.SaveFillAlreadyFinalizedBlockNum(context.TODO(), blockNum)
+			if err != nil {
+				log.Error("SaveFillAlreadyFinalizedBlockNum ERROR", err)
+			}
 		}
 	}
 	// refresh finalized info for update
@@ -252,14 +271,20 @@ func (s *Service) FillBlockData(conn websocket.WsConn, blockNum int, finalized b
 			block.Logs = util.ToString(rpcBlock.Block.Header.Digest.Logs)
 			block.Event = event
 
-			_ = s.UpdateBlockData(conn, block, finalized)
+			err = s.UpdateBlockData(conn, block, finalized)
+			if err != nil {
+				log.Error("UpdateBlockData ERROR", err)
+			}
 		}
 		setFinalized()
 		return
 	}
 	// for Create
 	if err = s.CreateChainBlock(conn, blockHash, &rpcBlock.Block, event, specVersion, finalized); err == nil {
-		_ = s.dao.SaveFillAlreadyBlockNum(context.TODO(), blockNum)
+		err = s.dao.SaveFillAlreadyBlockNum(context.TODO(), blockNum)
+		if err != nil {
+			log.Error("SaveFillAlreadyBlockNum ERROR", err)
+		}
 		setFinalized()
 	} else {
 		log.Error("Create chain block error %v", err)
@@ -270,5 +295,5 @@ func (s *Service) FillBlockData(conn websocket.WsConn, blockNum int, finalized b
 func (s *Service) updateChainMetadata(metadata map[string]interface{}) (err error) {
 	c := context.TODO()
 	err = s.dao.SetMetadata(c, metadata)
-	return
+	return err
 }

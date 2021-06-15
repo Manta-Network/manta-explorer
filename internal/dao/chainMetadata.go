@@ -2,10 +2,12 @@ package dao
 
 import (
 	"context"
+	"reflect"
+
 	"github.com/go-kratos/kratos/pkg/cache/redis"
+	"github.com/go-kratos/kratos/pkg/log"
 	"github.com/itering/subscan/util"
 	"github.com/pkg/errors"
-	"reflect"
 )
 
 func (d *Dao) SetMetadata(c context.Context, metadata map[string]interface{}) (err error) {
@@ -23,6 +25,9 @@ func (d *Dao) SetMetadata(c context.Context, metadata map[string]interface{}) (e
 		}
 	}
 	_, err = conn.Do("HMSET", args...)
+	if err != nil {
+		log.Error("HMSET ERROR", err)
+	}
 	return
 }
 
@@ -33,6 +38,9 @@ func (d *Dao) IncrMetadata(c context.Context, filed string, incrNum int) (err er
 	conn := d.redis.Get(c)
 	defer conn.Close()
 	_, err = conn.Do("HINCRBY", RedisMetadataKey, filed, incrNum)
+	if err != nil {
+		log.Error("HINCRBY ERROR", err)
+	}
 	return
 }
 

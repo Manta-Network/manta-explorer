@@ -2,9 +2,6 @@
 .mypy_cache
 cmd/cmd
 cmd/subscan
-configs/http.toml
-configs/mysql.toml
-configs/redis.toml
 log/*
 !log/.gitkeep
 node_modules
