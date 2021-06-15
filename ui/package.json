@@ -1,8 +1,8 @@
 {
-  "name": "subscan-essentials-ui",
-  "version": "1.0.0",
-  "description": "My transcendent Nuxt.js project",
-  "author": "Carl",
+  "name": "manta-explorer-ui",
+  "version": "0.0.1",
+  "description": "manta blockchain explorer",
+  "author": "manta developers <contact@manta.network>",
   "private": true,
   "scripts": {
     "dev": "nuxt",

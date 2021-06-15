@@ -52,13 +52,22 @@ export default {
   ],
 
   axios: {
-    proxy: process.env.NODE_ENV !== 'production',
-    browserBaseURL: process.env.NODE_ENV !== 'production' ? "" : "http://127.0.0.1:4399"
+    // use proxy configuration below if running locally (or on a host whose (fqdn) hostname does not end with 'manta.network')
+    proxy: (!process.env.HOSTNAME.endsWith('manta.network')),
+
+    // when running in production (on a host whose fqdn ends with 'manta.network'),
+    // set the axios (api) base url to https://api.$fqdn (eg: https://api.e1.testnet.pelagosmanta.network)
+    // pelagos configures an nginx proxy which will forward https://api.$fqdn to http://localhost:4399
+    // and maintains the required ssl cert configuration for that https endpoint.
+    browserBaseURL: (process.env.HOSTNAME.endsWith('manta.network'))
+      ? `https://api.${process.env.HOSTNAME}` // 
+      : ''
   },
 
+  // note: the proxy configuration below will not be used if running in production (on a host whose fqdn ends with 'manta.network').
   proxy: {
     "/api": {
-      target: "http://127.0.0.1:4399", // 接口的域名
+      target: "http://127.0.0.1:4399",
       secure: false,
       changeOrigin: true,
       pathRewrite: {
