@@ -25,7 +25,7 @@ export default {
       }
     ],
     script: [{
-      src: 'https://houtai.baidu.com/v2/jssdk'
+      src: 'https://use.fontawesome.com/1f1cfc849c.js'
     }],
     link: [{
         rel: 'icon',
@@ -34,7 +34,7 @@ export default {
       },
       {
         rel: 'stylesheet',
-        href: 'https://houtai.baidu.com/v2/csssdk'
+        href: 'https://use.fontawesome.com/20cd1c1bd4.css'
       }
     ]
   },
