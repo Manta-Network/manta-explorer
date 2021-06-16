@@ -53,7 +53,7 @@ export default {
 
   axios: {
     proxy: process.env.NODE_ENV !== 'production',
-    browserBaseURL: process.env.NODE_ENV !== 'production' ? '' : 'https://api.e1.testnet.pelagosmanta.com'
+    browserBaseURL: process.env.NODE_ENV !== 'production' ? '' : 'https://api.e1.testnet.pelagosmanta.network'
   },
 
   // note: the proxy configuration below will not be used if running in production (on a host whose fqdn ends with 'manta.network').

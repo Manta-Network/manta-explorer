@@ -9,8 +9,11 @@
     "build": "nuxt build",
     "start": "nuxt start",
     "generate": "nuxt generate",
-    "test": "jest"
+    "test": "jest",
+    "predeploy": "nuxt build",
+    "deploy": "gh-pages -d dist --branch main --repo git@github.com:Manta-Network/explorer.git --message 'github pages rebuild'"
   },
+  "homepage": "https://explorer.testnet.pelagosmanta.network/",
   "dependencies": {
     "@nuxtjs/axios": "^5.12.1",
     "element-ui": "^2.4.11",
@@ -24,6 +27,7 @@
     "@nuxtjs/proxy": "^2.0.1",
     "@vue/test-utils": "^1.0.0-beta.27",
     "babel-jest": "^24.1.0",
+    "gh-pages": "^3.2.1",
     "jest": "^24.1.0",
     "node-sass": "^4.14.1",
     "sass-loader": "^9.0.3",
