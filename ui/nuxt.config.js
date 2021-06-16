@@ -52,16 +52,8 @@ export default {
   ],
 
   axios: {
-    // use proxy configuration below if running locally (or on a host whose (fqdn) hostname does not end with 'manta.network')
-    proxy: (!process.env.HOSTNAME.endsWith('manta.network')),
-
-    // when running in production (on a host whose fqdn ends with 'manta.network'),
-    // set the axios (api) base url to https://api.$fqdn (eg: https://api.e1.testnet.pelagosmanta.network)
-    // pelagos configures an nginx proxy which will forward https://api.$fqdn to http://localhost:4399
-    // and maintains the required ssl cert configuration for that https endpoint.
-    browserBaseURL: (process.env.HOSTNAME.endsWith('manta.network'))
-      ? `https://api.${process.env.HOSTNAME}` // 
-      : ''
+    proxy: process.env.NODE_ENV !== 'production',
+    browserBaseURL: process.env.NODE_ENV !== 'production' ? '' : 'https://api.e1.testnet.pelagosmanta.com'
   },
 
   // note: the proxy configuration below will not be used if running in production (on a host whose fqdn ends with 'manta.network').

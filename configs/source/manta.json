@@ -1,0 +1,14 @@
+{
+    "CurrencyId": { "_enum": ["MA"] },
+    "CurrencyIdOf": "CurrencyId",
+    "Amount": "i128",
+    "AmountOf": "Amount",
+    "AccountInfo": "AccountInfoWithDualRefCount",
+    "PrivateTransferPayload": "[u8;608]",
+    "ReclaimPayload": "[u8;512]",
+    "Shard": {
+        "list": "Vec<[u8;32]>",
+        "root": "[u8;32]"
+    },
+    "Shards": "[Shard;256]"
+}
