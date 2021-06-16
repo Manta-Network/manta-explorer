@@ -30,6 +30,8 @@ func doAction(dt string) {
 	}
 
 	logDir := util.GetEnv("LOG_DIR", "../log/")
+	util.GetEnvConfig()
+	util.SetEnv()
 	pid := fmt.Sprintf("%s%s_pid", logDir, dt)
 	logName := fmt.Sprintf("%s%s_log", logDir, dt)
 
